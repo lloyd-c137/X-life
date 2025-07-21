@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>添加新事件</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <!-- 配置Tailwind自定义主题 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#3B82F6',
+            secondary: '#10B981',
+            neutral: '#64748B',
+            light: '#F1F5F9',
+            dark: '#1E293B'
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .form-input-focus {
+        @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none;
+      }
+      .card-shadow {
+        @apply shadow-lg shadow-gray-200/80;
+      }
+      .transition-base {
+        @apply transition-all duration-300 ease-in-out;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-inter min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <!-- 卡片容器 -->
+    <div class="bg-white rounded-xl p-6 md:p-8 card-shadow transition-base hover:shadow-xl">
+      <!-- 标题区域 -->
+      <div class="mb-6 text-center">
+        <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-dark flex items-center justify-center">
+          添加新随机事件
+        </h1>
+        <p class="text-neutral mt-1">填写事件信息，完成后点击保存</p>
+      </div>
+
+      <!-- 表单区域 -->
+      <form id="taskForm" class="space-y-5" method="post">
+        <!-- 任务名字段 -->
+        <div>
+          <label for="taskName" class="block text-sm font-medium text-gray-700 mb-1">
+            事件名 <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <i class="fa fa-file-text-o"></i>
+            </span>
+            <input
+              type="text"
+              id="taskName"
+              name="name"
+              required
+              placeholder="请输入事件名称"
+              class="pl-10 w-full rounded-lg border border-gray-300 py-3 px-4 text-gray-700 form-input-focus transition-base"
+            >
+          </div>
+        </div>
+
+        <!-- Value字段 -->
+        <div>
+          <label for="taskValue" class="block text-sm font-medium text-gray-700 mb-1">
+            Value <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+              <i class="fa fa-tag"></i>
+            </span>
+            <input
+              type="text"
+              id="taskValue"
+              name="value"
+              required
+              placeholder="请输入事件Value值"
+              class="pl-10 w-full rounded-lg border border-gray-300 py-3 px-4 text-gray-700 form-input-focus transition-base"
+            >
+          </div>
+        </div>
+
+        <!-- 任务描述（可选） -->
+        <div>
+          <label for="taskDescription" class="block text-sm font-medium text-gray-700 mb-1">
+            校验key
+          </label>
+          <input
+            id="taskDescription"
+            name="key"
+            required
+            placeholder="请输入校验key(后端root值)"
+            class="w-full rounded-lg border border-gray-300 py-3 px-4 text-gray-700 form-input-focus transition-base"
+          >
+        </div>
+
+        <!-- 按钮区域 -->
+        <div class="pt-2 flex space-x-3">
+          <a href="/">
+          <button
+            type="button"
+            class="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium transition-base hover:bg-gray-50"
+          >
+            <i class="fa fa-times mr-2"></i>取消
+          </button>
+          <button
+            type="submit"
+            class="flex-1 py-3 px-4 bg-primary text-white rounded-lg font-medium transition-base hover:bg-primary/90 active:bg-primary/80"
+          >
+            <i class="fa fa-save mr-2"></i>保存任务
+          </button>
+          </a>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# 忽略JetBrains IDE的配置目录
+# Python
+__pycache__/
+*.pyc
+
+# IDE配置
+.idea/
+
+# 数据库迁移
+migrations/
+
+.venv/
