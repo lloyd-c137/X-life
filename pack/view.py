@@ -16,7 +16,7 @@ def failed():
 @view.route("/",methods=["POST","GET"])
 @login_required
 def index():
-    return render_template("test.html")
+    return render_template("index.html")
 
 @view.route("/gettask")
 @login_required

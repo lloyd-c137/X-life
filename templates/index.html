@@ -10,6 +10,8 @@
   <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
   <!-- 引入像素风格字体 -->
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <!-- 引入axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
   <!-- 配置Tailwind -->
   <script>
@@ -92,6 +94,11 @@
   </style>
 </head>
 <body class="bg-pixelLight min-h-screen overflow-hidden font-pixel text-pixelDark flex flex-col">
+  {% if g.user.money < 0 %}
+    <script>
+      window.location.href = '/failed';
+    </script>
+  {% endif %}
   <!-- 顶部信息栏 -->
   <header class="w-full p-4 flex justify-between items-center z-10">
     <div class="flex items-center space-x-2">
@@ -150,12 +157,11 @@
 
     <!-- 展开后的任务输入面板 -->
     <div id="task-panel" class="interaction-panel absolute bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-md bg-[#333] rounded-2xl p-6 shadow-xl z-10 scale-0 opacity-0">
-      <h2 class="text-white text-center text-xl mb-4 pixel-text">新建任务</h2>
+      <h2 class="text-white text-center text-xl mb-4 pixel-text">开始随机任务</h2>
 
-      <div class="mb-4">
-        <label class="block text-white text-sm mb-2">任务描述</label>
-        <input type="text" id="task-input" placeholder="输入你要完成的任务..."
-               class="w-full bg-gray-700 border border-gray-600 rounded p-3 text-white focus:outline-none focus:ring-2 focus:ring-pixelBlue">
+      <!-- 移除任务输入框，改为提示文本 -->
+      <div class="mb-4 text-white text-center text-sm opacity-70">
+        点击"开始任务"后将自动获取随机任务
       </div>
 
       <div class="mb-6">
@@ -185,7 +191,6 @@
     // 获取DOM元素
     const interactionBall = document.getElementById('interaction-ball');
     const taskPanel = document.getElementById('task-panel');
-    const taskInput = document.getElementById('task-input');
     const confirmTask = document.getElementById('confirm-task');
     const cancelTaskBtn = document.getElementById('cancel-task-btn');
     const character = document.getElementById('character');
@@ -196,30 +201,19 @@
     const cancelTask = document.getElementById('cancel-task');
     const resultBox = document.getElementById('result-box');
     const resultText = document.getElementById('result-text');
-    const closeResult = document.getElementById('close-result');
     const worthDisplay = document.getElementById('worth');
     const timeOptions = document.querySelectorAll('.time-option');
+    const closeResult = document.getElementById('close-result'); // 新增：获取关闭按钮
 
     // 状态变量
     let isPanelOpen = false;
     let currentTask = null;
+    let currentTaskId = null;
     let timer = null;
     let remainingTime = 0;
     let totalTime = 0;
     let currentWorth = 100;
     let selectedTime = 300; // 默认5分钟(300秒)
-
-    // 随机事件列表
-    const events = [
-      "正在认真阅读...",
-      "努力做练习题...",
-      "专注背单词中...",
-      "认真整理笔记...",
-      "正在锻炼身体...",
-      "努力学习新技能...",
-      "专注思考问题...",
-      "认真完成作业..."
-    ];
 
     // 打开/关闭任务面板
     interactionBall.addEventListener('click', toggleTaskPanel);
@@ -266,45 +260,47 @@
     // 默认选中5分钟
     timeOptions[0].classList.add('bg-pixelBlue');
 
-    // 确认任务
+    // 确认任务（修改为异步函数）
     confirmTask.addEventListener('click', startTask);
 
-    function startTask() {
-      const taskDescription = taskInput.value.trim();
-      if (!taskDescription) {
-        alert('请输入任务描述');
+    async function startTask() {
+      try {
+        // 显示加载状态
+        eventText.textContent = "正在获取任务...";
+        eventBox.classList.remove('hidden');
+
+        // 请求后端获取任务ID和名称
+        const taskResponse = await axios.get('/gettask');
+        const { id: taskId, task_name: taskName } = taskResponse.data;
+
+        // 存储任务信息
+        currentTaskId = taskId;
+        currentTask = taskName;
+
+        // 设置时间参数
+        totalTime = selectedTime;
+        remainingTime = selectedTime;
+
+        // 关闭任务面板
+        toggleTaskPanel();
+
+        // 更新任务文本
+        eventText.textContent = `正在${taskName}...`;
+
+        // 开始倒计时和小人动画
+        startCountdown();
+        animateCharacter();
+
+      } catch (error) {
+        console.error('获取任务失败：', error);
+        eventBox.classList.add('hidden');
+        alert('获取任务失败，请重试！');
         return;
       }
-
-      currentTask = taskDescription;
-      totalTime = selectedTime;
-      remainingTime = selectedTime;
-
-      // 关闭任务面板
-      toggleTaskPanel();
-      taskInput.value = '';
-
-      // 显示事件框
-      eventBox.classList.remove('hidden');
-
-      // 随机选择一个事件
-      const randomEvent = events[Math.floor(Math.random() * events.length)];
-      eventText.textContent = randomEvent;
-
-      // 开始倒计时
-      startCountdown();
-
-      // 小人动画
-      animateCharacter();
     }
 
     // 小人动画
     function animateCharacter() {
-      const characterHead = document.querySelector('.character-head');
-      const characterBody = document.querySelector('.character-body');
-      const characterArms = document.querySelectorAll('.character-arms');
-      const characterLegs = document.querySelectorAll('.character-legs');
-
       let step = 0;
       character.classList.add('animate-bounce-slow');
 
@@ -314,36 +310,16 @@
         // 根据步数改变小人姿势
         switch(step) {
           case 0:
-            characterHead.style.transform = 'translateY(0)';
-            characterBody.style.height = '14px';
-            characterArms[0].style.transform = 'rotate(0deg)';
-            characterArms[1].style.transform = 'rotate(0deg)';
-            characterLegs[0].style.transform = 'translateX(0)';
-            characterLegs[1].style.transform = 'translateX(0)';
+            character.style.transform = 'translate(-50%, 0)';
             break;
           case 1:
-            characterHead.style.transform = 'translateY(-2px)';
-            characterBody.style.height = '13px';
-            characterArms[0].style.transform = 'rotate(-10deg)';
-            characterArms[1].style.transform = 'rotate(10deg)';
-            characterLegs[0].style.transform = 'translateX(-2px)';
-            characterLegs[1].style.transform = 'translateX(2px)';
+            character.style.transform = 'translate(-50%, -5px) rotate(-2deg)';
             break;
           case 2:
-            characterHead.style.transform = 'translateY(0)';
-            characterBody.style.height = '14px';
-            characterArms[0].style.transform = 'rotate(-15deg)';
-            characterArms[1].style.transform = 'rotate(15deg)';
-            characterLegs[0].style.transform = 'translateX(-3px)';
-            characterLegs[1].style.transform = 'translateX(3px)';
+            character.style.transform = 'translate(-50%, 0)';
             break;
           case 3:
-            characterHead.style.transform = 'translateY(-2px)';
-            characterBody.style.height = '13px';
-            characterArms[0].style.transform = 'rotate(-10deg)';
-            characterArms[1].style.transform = 'rotate(10deg)';
-            characterLegs[0].style.transform = 'translateX(-2px)';
-            characterLegs[1].style.transform = 'translateX(2px)';
+            character.style.transform = 'translate(-50%, -5px) rotate(2deg)';
             break;
         }
       }, 200);
@@ -361,15 +337,13 @@
         remainingTime--;
 
         if (remainingTime <= 0) {
-          completeTask(true);
+          completeTask(true); // 倒计时结束，任务成功
           return;
         }
 
-        // 更新进度条
+        // 更新进度条和倒计时显示
         const progress = (remainingTime / totalTime) * 100;
         timerProgress.style.width = `${progress}%`;
-
-        // 更新倒计时显示
         updateCountdownDisplay();
       }, 1000);
     }
@@ -381,66 +355,99 @@
       countdownDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
 
-    // 完成任务
+    // 完成任务（成功/失败时调用）
     function completeTask(success) {
-      clearInterval(timer);
-      eventBox.classList.add('hidden');
+    clearInterval(timer);
+    eventBox.classList.add('hidden');
 
-      // 停止小人动画
-      character.classList.remove('animate-bounce-slow');
-      if (character.animationInterval) {
+    // 停止小人动画
+    character.classList.remove('animate-bounce-slow');
+    if (character.animationInterval) {
         clearInterval(character.animationInterval);
-      }
-
-      // 重置小人姿势
-      const characterHead = document.querySelector('.character-head');
-      const characterBody = document.querySelector('.character-body');
-      const characterArms = document.querySelectorAll('.character-arms');
-      const characterLegs = document.querySelectorAll('.character-legs');
-
-      characterHead.style.transform = 'translateY(0)';
-      characterBody.style.height = '14px';
-      characterArms[0].style.transform = 'rotate(0deg)';
-      characterArms[1].style.transform = 'rotate(0deg)';
-      characterLegs[0].style.transform = 'translateX(0)';
-      characterLegs[1].style.transform = 'translateX(0)';
-
-      if (success) {
-        // 任务成功，增加身价
-        const reward = Math.floor(Math.random() * 20) + 10;
-        currentWorth += reward;
-        resultText.textContent = `任务完成！获得${reward}身价！`;
-        resultBox.classList.remove('hidden');
-
-        // 成功动画
-        character.style.transform = 'translate(-50%, -35%) scale(1.2)';
-        setTimeout(() => {
-          character.style.transform = 'translate(-50%, -35%) scale(1)';
-        }, 500);
-      } else {
-        // 任务失败，减少身价
-        const penalty = Math.floor(Math.random() * 15) + 5;
-        currentWorth = Math.max(0, currentWorth - penalty);
-        resultText.textContent = `任务失败！损失${penalty}身价！`;
-        resultBox.classList.remove('hidden');
-
-        // 失败动画
-        character.style.transform = 'translate(-50%, -35%) rotate(-5deg)';
-        setTimeout(() => {
-          character.style.transform = 'translate(-50%, -35%) rotate(5deg)';
-          setTimeout(() => {
-            character.style.transform = 'translate(-50%, -35%) rotate(0)';
-          }, 200);
-        }, 200);
-      }
-
-      // 更新身价显示
-      worthDisplay.textContent = currentWorth;
     }
 
-    // 取消任务
+    // 重置小人姿势
+    character.style.transform = 'translate(-50%, 0)';
+
+    // 准备提交给后端的数据
+    const postData = {
+        task_id: currentTaskId,
+        user_id: '{{ g.user.id }}',
+        status: success
+    };
+
+    if (success) {
+        // 任务成功：调用完成接口
+        axios.post('/task_upgrade', postData)
+           .then(response => {
+                console.log('任务完成已同步到后端', response.data);
+
+                // 从后端响应中获取奖励值
+                const reward = response.data.reward || 0;
+                currentWorth += reward;
+
+                // 更新UI
+                resultText.textContent = `任务完成！获得${reward}身价！`;
+                resultBox.classList.remove('hidden');
+
+                // 成功动画
+                character.style.transform = 'translate(-50%, -35%) scale(1.2)';
+                setTimeout(() => character.style.transform = 'translate(-50%, 0)', 500);
+
+                setTimeout(() => {
+                    resultBox.classList.add('hidden');
+                    // 添加页面刷新代码
+                    location.reload();
+                }, 3000);
+            })
+           .catch(error => {
+                console.error('同步任务完成失败：', error);
+                // 错误处理逻辑（可选）
+            });
+            } else {
+                // 任务失败：调用取消接口
+                axios.post('/task_upgrade', postData)
+                   .then(response => {
+                        console.log('任务取消已同步到后端', response.data);
+
+                        // 从后端响应中获取惩罚值
+                        const penalty = response.data.reward || 0;
+                        currentWorth = Math.max(0, currentWorth - penalty);
+
+                        // 更新UI
+                        resultText.textContent = `任务失败！损失${penalty}身价！`;
+                        resultBox.classList.remove('hidden');
+
+                        // 失败动画
+                        character.style.transform = 'translate(-50%, 0) rotate(-5deg)';
+                        setTimeout(() => {
+                            character.style.transform = 'translate(-50%, 0) rotate(5deg)';
+                            setTimeout(() => character.style.transform = 'translate(-50%, 0)', 200);
+                        }, 200);
+
+                        setTimeout(() => {
+                            resultBox.classList.add('hidden');
+                            // 添加页面刷新代码
+                            location.reload();
+                        }, 3000);
+                    })
+                   .catch(error => {
+                        console.error('同步任务取消失败：', error);
+                        // 错误处理逻辑（可选）
+                    });
+            }
+
+        // 更新身价显示
+        worthDisplay.textContent = currentWorth;
+
+        // 重置任务ID
+        currentTaskId = null;
+    }
+
+
+    // 取消任务（放弃任务按钮）
     cancelTask.addEventListener('click', () => {
-      completeTask(false);
+      completeTask(false); // 标记任务失败
     });
 
     // 关闭结果提示
